@@ -4,7 +4,7 @@ import numpy as np
 from typing import List, Tuple, Callable
 from utils import find_char_location
 
-class ShortestPathAlgorithm:
+class ShortestPathAlgorithms:
     def __init__(self, maze: List[List[int]], goal: Tuple[int, int]):
         self.maze = maze
         self.goal = goal
@@ -68,7 +68,7 @@ def main():
     ]
     
     goal = find_char_location(maze=maze, wanted_char="E")
-    shortest_path_algorithm = ShortestPathAlgorithm(maze=maze, goal=goal)
+    shortest_path_algorithm = ShortestPathAlgorithms(maze=maze, goal=goal)
     
     dijkstra_cost, dijkstra_num_of_steps = shortest_path_algorithm.dijkstra_algorithm()
     print(f"Dijkstra best cost: {dijkstra_cost}, found in {dijkstra_num_of_steps} steps.")
@@ -78,8 +78,6 @@ def main():
     a_star_cost, a_star_num_of_steps = shortest_path_algorithm.a_star_algorithm(h_n=h_n)
     print(f"A_star best cost: {a_star_cost}, found in {a_star_num_of_steps} steps.")
     
-    
-
 
 if __name__ == "__main__":
     main()
