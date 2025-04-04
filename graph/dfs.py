@@ -1,4 +1,4 @@
-from typing import List, Set
+from typing import List, Set, Dict
 from collections import defaultdict
 
 from utils import GraphEdge, GraphNode
@@ -31,8 +31,42 @@ class DFS:
             return True
         
         return dfs(at=start_node) and len(visited_set) == len(self.nodes)
-        
     
+    def find_path(self, start_node: GraphNode, target_node: GraphNode):
+        
+        graph = self.graph
+        visited_set: Set[GraphNode] = set()
+        reversed_path: Dict[GraphNode] = {}
+        
+        def dfs_find_path(at: GraphNode):
+            if at in visited_set:
+                return False
+            
+            visited_set.add(at)
+            
+            if at == target_node:
+                return True
+            
+            for next_node in graph.get(at, []):
+                if next_node not in visited_set:
+                    reversed_path[next_node] = at 
+                    if dfs_find_path(next_node): return True 
+
+            return False
+        
+        if not dfs_find_path(at=start_node):
+            return None
+        
+        path = []
+        node = target_node
+        while node in reversed_path:
+            path.append(node)
+            node = reversed_path[node]  # כאן הייתה השגיאה!
+
+        path.append(start_node)  # להוסיף את הצומת ההתחלתי
+        return path[::-1]
+    
+
 if __name__ == "__main__":
     edges = [(GraphEdge(from_node=GraphNode(value=0), to_node=GraphNode(value=1))), 
              (GraphEdge(from_node=GraphNode(value=0), to_node=GraphNode(value=2))), 
@@ -50,7 +84,13 @@ if __name__ == "__main__":
                             (GraphEdge(from_node=GraphNode(value=2), to_node=GraphNode(value=3)))]
     
     dfs = DFS(edges=edges)
-    result = dfs.run(start_node=GraphNode(0))
+    start_node = GraphNode(value=0)
+    result = dfs.run(start_node=start_node)
     print(result)
+    
+    target_node = GraphNode(value=5)
+    path = dfs.find_path(start_node=start_node, target_node=target_node)
+    print(f"From node: {start_node.value} to {target_node.value}: "
+          f"{' -> '.join(str(node.value) for node in path)}")
         
         
