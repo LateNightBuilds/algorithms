@@ -1,21 +1,23 @@
 from typing import List, Set, Dict
 from collections import defaultdict
 
-from utils import GraphEdge, GraphNode
+from utils import (GraphEdge, GraphNode, 
+                   edges_list_to_adjacency_list, 
+                   edges_list_to_nodes_set, 
+                   print_nodes)
 
-class DFS:
+
+class DepthFirstSearch:
     
     def __init__(self, edges: List[GraphEdge]):
         self.edges = edges
-        self.nodes = {node for edge in edges 
-                      for node in [edge.from_node, edge.to_node]}
-
-        self.graph = defaultdict(list)
-        [self.graph[edge.from_node].append(edge.to_node) for edge in self.edges]
+        self.nodes: Set[GraphNode]  = edges_list_to_nodes_set(edges=self.edges)
+        self.adjacency_list: Dict[GraphNode, List[GraphNode]] = (
+            edges_list_to_adjacency_list(edges=self.edges))
     
-    def run(self, start_node: GraphNode):
+    def run(self, start_node: GraphNode) -> bool:
         
-        graph = self.graph
+        graph = self.adjacency_list
         visited_set: Set = set()
         
         def dfs(at: GraphNode):            
@@ -24,7 +26,7 @@ class DFS:
 
             visited_set.add(at)
             
-            for next_node in graph.get(at, []):
+            for next_node, weight in graph.get(at, []):
                 if not dfs(next_node): 
                     return False
         
@@ -32,9 +34,9 @@ class DFS:
         
         return dfs(at=start_node) and len(visited_set) == len(self.nodes)
     
-    def find_path(self, start_node: GraphNode, target_node: GraphNode):
+    def find_path(self, start_node: GraphNode, target_node: GraphNode) -> List[GraphNode]:
         
-        graph = self.graph
+        graph = self.adjacency_list
         visited_set: Set[GraphNode] = set()
         reversed_path: Dict[GraphNode] = {}
         
@@ -47,7 +49,7 @@ class DFS:
             if at == target_node:
                 return True
             
-            for next_node in graph.get(at, []):
+            for next_node, weight in graph.get(at, []):
                 if next_node not in visited_set:
                     reversed_path[next_node] = at 
                     if dfs_find_path(next_node): return True 
@@ -74,23 +76,13 @@ if __name__ == "__main__":
              (GraphEdge(from_node=GraphNode(value=1), to_node=GraphNode(value=4))), 
              (GraphEdge(from_node=GraphNode(value=2), to_node=GraphNode(value=5)))]
     
-    edges_with_loop = [(GraphEdge(from_node=GraphNode(value=0), to_node=GraphNode(value=1))), 
-                       (GraphEdge(from_node=GraphNode(value=1), to_node=GraphNode(value=2))), 
-                       (GraphEdge(from_node=GraphNode(value=2), to_node=GraphNode(value=0)))]
-    
-    edges_with_self_loop = [(GraphEdge(from_node=GraphNode(value=0), to_node=GraphNode(value=1))), 
-                            (GraphEdge(from_node=GraphNode(value=1), to_node=GraphNode(value=2))), 
-                            (GraphEdge(from_node=GraphNode(value=2), to_node=GraphNode(value=2))), 
-                            (GraphEdge(from_node=GraphNode(value=2), to_node=GraphNode(value=3)))]
-    
-    dfs = DFS(edges=edges)
+    dfs = DepthFirstSearch(edges=edges)
     start_node = GraphNode(value=0)
     result = dfs.run(start_node=start_node)
     print(result)
     
     target_node = GraphNode(value=5)
     path = dfs.find_path(start_node=start_node, target_node=target_node)
-    print(f"From node: {start_node.value} to {target_node.value}: "
-          f"{' -> '.join(str(node.value) for node in path)}")
+    print_nodes(nodes=path)
         
         
