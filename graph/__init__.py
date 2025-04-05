@@ -1,1 +1,1 @@
-from dfs import DepthFirstSearch
+from graph.depth_first_search import DepthFirstSearch

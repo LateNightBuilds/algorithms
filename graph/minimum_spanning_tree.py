@@ -5,7 +5,7 @@ from utils import (GraphEdge, GraphNode,
                    edges_list_to_adjacency_list,
                    edges_list_to_nodes_set,
                    print_edges)
-from dfs import DepthFirstSearch
+from depth_first_search import DepthFirstSearch
 
 class MinimumSpanningTree:
     def __init__(self, edges: List[GraphEdge]):
