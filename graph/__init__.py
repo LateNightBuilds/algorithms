@@ -1,1 +1,1 @@
-from graph.depth_first_search import DepthFirstSearch
+from depth_first_search import DepthFirstSearch
