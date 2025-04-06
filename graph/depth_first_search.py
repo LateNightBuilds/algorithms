@@ -15,7 +15,7 @@ class DepthFirstSearch:
         self.adjacency_list: Dict[GraphNode, List[GraphNode]] = (
             edges_list_to_adjacency_list(edges=self.edges))
     
-    def run(self, start_node: GraphNode) -> bool:
+    def is_connected(self, start_node: GraphNode) -> bool:
         
         graph = self.adjacency_list
         visited_set: Set = set()
@@ -78,7 +78,7 @@ if __name__ == "__main__":
     
     dfs = DepthFirstSearch(edges=edges)
     start_node = GraphNode(value=0)
-    result = dfs.run(start_node=start_node)
+    result = dfs.is_connected(start_node=start_node)
     print(result)
     
     target_node = GraphNode(value=5)

@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import List
 
-@dataclass(frozen=True)
+@dataclass(order=True, frozen=True)
 class GraphNode:
     value: int
     
