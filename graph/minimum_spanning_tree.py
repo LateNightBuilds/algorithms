@@ -1,57 +1,40 @@
-from typing import List, Dict, Set
 import heapq
 
-from utils import (GraphEdge, GraphNode, 
-                   edges_list_to_adjacency_list,
-                   edges_list_to_nodes_set,
-                   print_edges)
-from depth_first_search import DepthFirstSearch
+import networkx as nx
+
+from graph.utils import graph_to_edge_list
+
 
 class MinimumSpanningTree:
-    def __init__(self, edges: List[GraphEdge]):
-        self.edges = edges
-        self.nodes: Set[GraphNode] = edges_list_to_nodes_set(edges=self.edges)
-        self.adjacency_list: Dict[GraphNode, List[GraphNode]] = (
-            edges_list_to_adjacency_list(edges=self.edges))
-        
+    def __init__(self, graph: nx.Graph):
+        self.graph = graph
+        self.nodes = list(graph.nodes())
+
     def __post_init__(self):
-        dfs = DepthFirstSearch(edges=self.edges)
-        
-        any_node = self.nodes[0]
-        if not dfs.run(start_node=any_node):
-            ValueError("Cannot compute MST: the input graph is not connected.")
-        
+        if not nx.is_connected(self.graph):
+            raise ValueError("Cannot compute MST: the input graph is not connected.")
+
     def run(self):
         connected_nodes = set()
-        heap = [*self.edges]
-        heapq.heapify(heap)
-        
-        mst_edges: List[GraphEdge] = []
-        
-        while len(connected_nodes) < len(self.nodes):
-            chipest_edge: GraphEdge = heapq.heappop(heap)
-            is_nodes_already_connected: bool = (chipest_edge.from_node in connected_nodes
-                                                and chipest_edge.to_node in connected_nodes)
+
+        edges = graph_to_edge_list(graph=self.graph)
+        heapq.heapify(edges)
+
+        mst_edges = []
+
+        while len(connected_nodes) < len(self.nodes) and edges:
+            weight, from_node, to_node = heapq.heappop(edges)
+
+            is_nodes_already_connected = (from_node in connected_nodes and
+                                          to_node in connected_nodes)
+
             if is_nodes_already_connected:
                 continue
-            
-            mst_edges.append(chipest_edge)
-            connected_nodes.update([chipest_edge.from_node, chipest_edge.to_node])
-        
+
+            mst_edges.append((from_node, to_node, weight))
+            connected_nodes.update([from_node, to_node])
+
+        if len(connected_nodes) < len(self.nodes):
+            raise ValueError("Could not construct complete MST")
+
         return mst_edges
-            
-            
-            
-if __name__ == "__main__":
-    edges = [
-        GraphEdge(from_node=GraphNode(value=0), to_node=GraphNode(value=1), weight=2),  
-        GraphEdge(from_node=GraphNode(value=0), to_node=GraphNode(value=3), weight=6),
-        GraphEdge(from_node=GraphNode(value=1), to_node=GraphNode(value=2), weight=3),
-        GraphEdge(from_node=GraphNode(value=1), to_node=GraphNode(value=3), weight=8),
-        GraphEdge(from_node=GraphNode(value=1), to_node=GraphNode(value=4), weight=5),
-        GraphEdge(from_node=GraphNode(value=2), to_node=GraphNode(value=4), weight=7),
-        GraphEdge(from_node=GraphNode(value=3), to_node=GraphNode(value=4), weight=9)]
-    
-    mst = MinimumSpanningTree(edges=edges)
-    mst_edges = mst.run()
-    print_edges(edges=mst_edges)
