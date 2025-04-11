@@ -1,20 +1,8 @@
-from enum import StrEnum
 from typing import List, Tuple
 
 import networkx as nx
 
-
-class InputType(StrEnum):
-    EDGE_LIST = 'edge_list'
-    GRID = 'GRID'
-
-
-class GridCellType(StrEnum):
-    START = 'start'
-    OPEN_PATH = 'open_path'
-    BLOCK = 'block'
-    OBSTACLE = 'obstacle'
-    END = 'end'
+from graph.utils import GridCellType
 
 
 def edge_list_to_graph(input_data: List[Tuple[int, int, int]]) -> nx.Graph:
