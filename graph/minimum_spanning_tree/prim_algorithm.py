@@ -5,7 +5,7 @@ import networkx as nx
 from graph.utils import graph_to_edge_list
 
 
-class MinimumSpanningTree:
+class PrimAlgorithm:
     def __init__(self, graph: nx.Graph):
         self.graph = graph
         self.nodes = list(graph.nodes())
