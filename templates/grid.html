@@ -40,13 +40,29 @@
             background-color: #1e1e1e;
             border: 1px solid #444;
             border-radius: 6px;
-            transition: background-color 0.2s;
+            transition: all 0.2s ease;
+            position: relative;
         }
         .start { background-color: #4cd964; }
         .end { background-color: #ff3b30; }
         .block { background-color: #636366; }
         .obstacle { background-color: #ff9500; }
         .open_path { background-color: #2c2c2e; }
+        .path { background-color: #5ac8fa; }
+        .exploring {
+            box-shadow: 0 0 0 3px #af52de;
+            z-index: 10;
+        }
+        .step-number {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 14px;
+            font-weight: bold;
+            color: #fff;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.7);
+        }
 
         .controls {
             display: grid;
@@ -94,6 +110,23 @@
             font-size: 14px;
             color: #ff9f0a;
         }
+        .animation-controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            width: 100%;
+            max-width: 300px;
+            display: none;
+        }
+        .animation-controls button {
+            flex: 1;
+        }
+        .animation-step {
+            text-align: center;
+            margin-top: 10px;
+            font-size: 14px;
+            color: #e0e0e0;
+        }
     </style>
     <link href="https://fonts.googleapis.com/css2?family=Fira+Code&display=swap" rel="stylesheet">
 </head>
@@ -130,6 +163,13 @@
                 </div>
             </div>
             <div class="status" id="status">Place start and end bricks to enable Run button</div>
+
+            <div class="animation-controls" id="animationControls">
+                <button id="playPauseBtn" onclick="togglePlayPause()">▶ Play</button>
+                <button id="resetAnimBtn" onclick="resetAnimation()">Reset</button>
+            </div>
+            <div class="animation-step" id="stepInfo"></div>
+
             <div class="grid" id="grid"></div>
         </div>
     </div>
@@ -140,9 +180,17 @@
         const algorithmSelector = document.getElementById("algorithmSelect");
         const runBtn = document.getElementById("runBtn");
         const statusElement = document.getElementById("status");
+        const animationControlsElement = document.getElementById("animationControls");
+        const playPauseBtn = document.getElementById("playPauseBtn");
+        const stepInfoElement = document.getElementById("stepInfo");
 
         let placedStart = null;
         let placedEnd = null;
+        let pathHistory = null;
+        let animationInterval = null;
+        let currentStep = 0;
+        let isPlaying = false;
+        let animationSpeed = 1000; // 1 second per step
 
         function createGrid() {
             for (let i = 0; i < 5; i++) {
@@ -189,6 +237,9 @@
         }
 
         function onCellClick(event) {
+            // If animation is in progress, disable cell clicking
+            if (pathHistory) return;
+
             const cell = event.target;
             const row = parseInt(cell.dataset.row);
             const col = parseInt(cell.dataset.col);
@@ -212,13 +263,26 @@
         }
 
         function resetGrid() {
+            // Stop any ongoing animation
+            resetAnimation();
+
             document.querySelectorAll(".cell").forEach(cell => {
                 cell.className = "cell open_path";
                 cell.dataset.type = 'open_path';
+                // Remove any step numbers
+                const stepNumber = cell.querySelector('.step-number');
+                if (stepNumber) {
+                    cell.removeChild(stepNumber);
+                }
             });
+
             placedStart = null;
             placedEnd = null;
             updateRunButtonState();
+
+            // Hide animation controls
+            animationControlsElement.style.display = 'none';
+            stepInfoElement.textContent = '';
         }
 
         async function runAlgorithm() {
@@ -226,6 +290,9 @@
                 alert("Start and End bricks must be placed before running the algorithm.");
                 return;
             }
+
+            // Reset any previous animation
+            resetAnimation();
 
             const algorithm = algorithmSelector.value;
 
@@ -255,10 +322,21 @@
                     body: JSON.stringify(payload)
                 });
                 const result = await response.json();
+
                 if (response.ok) {
                     statusElement.textContent = result.message;
                     statusElement.style.color = "#4cd964";
-                    alert(result.message);
+
+                    // Store the path history and start the animation
+                    pathHistory = result.history || {};
+
+                    if (Object.keys(pathHistory).length > 0) {
+                        statusElement.textContent = `${algorithm} completed. Showing exploration animation...`;
+                        animationControlsElement.style.display = 'flex';
+                        startAnimation();
+                    } else {
+                        statusElement.textContent = `${algorithm} completed, but no path history was returned.`;
+                    }
                 } else {
                     statusElement.textContent = result.message || "Unexpected error.";
                     statusElement.style.color = "#ff3b30";
@@ -272,6 +350,116 @@
             } finally {
                 runBtn.disabled = !(placedStart && placedEnd);
             }
+        }
+
+        function startAnimation() {
+            currentStep = 0;
+            isPlaying = true;
+            playPauseBtn.innerHTML = "❚❚ Pause";
+            updateAnimationStep();
+            animationInterval = setInterval(advanceAnimation, animationSpeed);
+        }
+
+        function advanceAnimation() {
+            if (currentStep >= Object.keys(pathHistory).length) {
+                // Animation complete
+                stopAnimation();
+                return;
+            }
+
+            // Update the grid with the current step
+            updateAnimationStep();
+            currentStep++;
+        }
+
+        function updateAnimationStep() {
+            // Clear previous exploration markers
+            document.querySelectorAll('.cell').forEach(cell => {
+                cell.classList.remove('exploring');
+                cell.classList.remove('path');
+            });
+
+            // Show all previous steps as path
+            for (let i = 0; i < currentStep; i++) {
+                const node = pathHistory[i];
+                if (node) {
+                    const row = node[0];
+                    const col = node[1];
+                    const cell = getCellAt(row, col);
+
+                    // Skip coloring start and end cells
+                    if (cell.dataset.type !== 'start' && cell.dataset.type !== 'end') {
+                        cell.classList.add('path');
+                    }
+
+                    // Add the step number if not already present
+                    if (!cell.querySelector('.step-number')) {
+                        const stepNumberElement = document.createElement('div');
+                        stepNumberElement.className = 'step-number';
+                        stepNumberElement.textContent = i;
+                        cell.appendChild(stepNumberElement);
+                    }
+                }
+            }
+
+            // Show current exploration
+            const currentNode = pathHistory[currentStep];
+            if (currentNode) {
+                const row = currentNode[0];
+                const col = currentNode[1];
+                const cell = getCellAt(row, col);
+                cell.classList.add('exploring');
+
+                stepInfoElement.textContent = `Step ${currentStep}: Exploring (${row}, ${col})`;
+            }
+        }
+
+        function getCellAt(row, col) {
+            return document.querySelector(`.cell[data-row="${row}"][data-col="${col}"]`);
+        }
+
+        function togglePlayPause() {
+            if (isPlaying) {
+                // Pause
+                clearInterval(animationInterval);
+                playPauseBtn.innerHTML = "▶ Play";
+            } else {
+                // Play/resume
+                animationInterval = setInterval(advanceAnimation, animationSpeed);
+                playPauseBtn.innerHTML = "❚❚ Pause";
+            }
+            isPlaying = !isPlaying;
+        }
+
+        function stopAnimation() {
+            clearInterval(animationInterval);
+            isPlaying = false;
+            playPauseBtn.innerHTML = "▶ Replay";
+            statusElement.textContent = "Animation complete";
+        }
+
+        function resetAnimation() {
+            if (animationInterval) {
+                clearInterval(animationInterval);
+            }
+
+            // Clear any visualization
+            document.querySelectorAll('.cell').forEach(cell => {
+                cell.classList.remove('exploring');
+                cell.classList.remove('path');
+
+                // Remove step numbers
+                const stepNumber = cell.querySelector('.step-number');
+                if (stepNumber) {
+                    cell.removeChild(stepNumber);
+                }
+            });
+
+            currentStep = 0;
+            isPlaying = false;
+            pathHistory = null;
+            playPauseBtn.innerHTML = "▶ Play";
+            stepInfoElement.textContent = '';
         }
 
         createGrid();

@@ -1,10 +1,11 @@
 import json
-from typing import List, Dict
+from typing import List, Dict, Any, Tuple
 
 from flask import Flask, render_template, request, jsonify
 
 from graph.shortest_path.methods import ShortestPathMethod
 from graph.utils import GridCellType
+from graph.utils.history import HistoryLogger
 from graph.utils.utils import grid_to_graph
 from graph_client import run_shortest_path
 
@@ -72,10 +73,14 @@ def run_algorithm():
         graph = grid_to_graph(input_data=input_data)
         cost, history = run_shortest_path(g=graph, method=method)
 
+        formatted_history = format_history_for_frontend(history)
+
         # Create the result object to save
         result_data = {
             'algorithm': algorithm,
-            'grid': grid_data
+            'grid': grid_data,
+            'history': formatted_history,
+            'cost': cost
         }
 
         # Save the grid data as JSON for future reference
@@ -83,12 +88,35 @@ def run_algorithm():
             json.dump(result_data, f, indent=2)
 
         return jsonify({
-            "message": f"Algorithm {algorithm} completed successfully. Graph saved as graph.gml and grid saved as grid_data.json"
+            "message": f"Algorithm {algorithm} completed successfully. Path cost: {cost}",
+            "history": formatted_history,
+            "cost": cost
         })
 
     except Exception as e:
         print(f"Error in run_algorithm: {str(e)}")
         return jsonify({"message": f"Error: {str(e)}"}), 500
+
+
+def format_history_for_frontend(history: HistoryLogger) -> Dict[int, List[int]]:
+    """Convert history to a format suitable for the frontend."""
+    formatted_history = {}
+
+    for step, node in history.history_dict.items():
+        # If history is in the format {step: node}
+        if isinstance(node, tuple):
+            formatted_history[step] = list(node)
+        # If history is in the format {step: (node, data)}
+        elif isinstance(node, tuple) and len(node) == 2:
+            formatted_history[step] = list(node[0])
+        else:
+            # Try to handle any other format
+            try:
+                formatted_history[step] = [node[0], node[1]] if hasattr(node, '__getitem__') else [0, 0]
+            except (TypeError, IndexError):
+                formatted_history[step] = [0, 0]  # Default fallback
+
+    return formatted_history
 
 
 def convert_html_cell_type_to_grid_cell_type(html_grid: List[Dict]) -> List[List[GridCellType]]:
