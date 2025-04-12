@@ -2,7 +2,7 @@ from typing import List, Tuple
 
 import networkx as nx
 
-from algorithms.graph.utils import GridCellType
+from .definitions import GridCellType
 
 
 def edge_list_to_graph(input_data: List[Tuple[int, int, int]]) -> nx.Graph:

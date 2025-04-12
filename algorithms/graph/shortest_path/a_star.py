@@ -2,7 +2,6 @@ import heapq
 from typing import List, Tuple
 
 import numpy as np
-
 from algorithms.graph.utils import GridCellType, find_char_location
 from algorithms.graph.utils.history import HistoryLogger
 
