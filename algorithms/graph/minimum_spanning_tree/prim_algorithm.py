@@ -2,7 +2,7 @@ import heapq
 
 import networkx as nx
 
-from graph.utils import graph_to_edge_list
+from algorithms.graph.utils import graph_to_edge_list
 
 
 class PrimAlgorithm:

@@ -3,9 +3,9 @@ from typing import List, Tuple
 
 import numpy as np
 
-from graph.utils import (find_char_location,
-                         GridCellType)
-from graph.utils.history import HistoryLogger
+from algorithms.graph.utils import (find_char_location,
+                                    GridCellType)
+from algorithms.graph.utils.history import HistoryLogger
 
 
 class Dijkstra:

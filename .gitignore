@@ -3,6 +3,11 @@ __pycache__/
 *.json
 *.gml
 
+*.egg-info/
+*.egg
+dist/
+build/
+
 venv/
 
 .idea/

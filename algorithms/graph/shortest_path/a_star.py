@@ -3,8 +3,8 @@ from typing import List, Tuple
 
 import numpy as np
 
-from graph.utils import GridCellType, find_char_location
-from graph.utils.history import HistoryLogger
+from algorithms.graph.utils import GridCellType, find_char_location
+from algorithms.graph.utils.history import HistoryLogger
 
 
 class AStar:
