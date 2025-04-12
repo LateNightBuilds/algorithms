@@ -1,7 +1,12 @@
-from flask import Flask, render_template, request, jsonify
-import networkx as nx
 import json
-import os
+from typing import List, Dict
+
+from flask import Flask, render_template, request, jsonify
+
+from graph.shortest_path.methods import ShortestPathMethod
+from graph.utils import GridCellType
+from graph.utils.utils import grid_to_graph
+from graph_client import run_shortest_path
 
 app = Flask(__name__)
 
@@ -62,26 +67,10 @@ def run_algorithm():
                 "message": f"Missing required bricks: {', '.join(missing)}"
             }), 400
 
-        # Convert grid data to 2D array format for easier processing
-        processed_grid = [['open_path' for _ in range(5)] for _ in range(5)]
-        for cell in grid_data:
-            row = cell['row']
-            col = cell['col']
-            cell_type = cell['type']
-            processed_grid[row][col] = cell_type
-
-        # Create a graph from the grid
-        G = nx.grid_2d_graph(5, 5)  # Create a 5x5 grid graph
-        for i in range(5):
-            for j in range(5):
-                for cell in grid_data:
-                    if cell['row'] == i and cell['col'] == j:
-                        if cell['type'] == 'block' or cell['type'] == 'obstacle':
-                            if (i, j) in G.nodes():
-                                G.remove_node((i, j))  # Remove blocked or obstacle nodes
-
-        # Save the graph to a file
-        nx.write_gml(G, "graph.gml")
+        input_data = convert_html_cell_type_to_grid_cell_type(html_grid=grid_data)
+        method = convert_html_algorithm_type_to_algorithm_method(html_algorithm_type=algorithm)
+        graph = grid_to_graph(input_data=input_data)
+        cost, history = run_shortest_path(g=graph, method=method)
 
         # Create the result object to save
         result_data = {
@@ -100,6 +89,31 @@ def run_algorithm():
     except Exception as e:
         print(f"Error in run_algorithm: {str(e)}")
         return jsonify({"message": f"Error: {str(e)}"}), 500
+
+
+def convert_html_cell_type_to_grid_cell_type(html_grid: List[Dict]) -> List[List[GridCellType]]:
+    processed_grid = [[GridCellType.OPEN_PATH for _ in range(5)] for _ in range(5)]
+
+    html_cell_type_to_grid_cell_type = {'start': GridCellType.START,
+                                        'end': GridCellType.END,
+                                        'open_path': GridCellType.OPEN_PATH,
+                                        'block': GridCellType.BLOCK,
+                                        'obstacle': GridCellType.OBSTACLE}
+
+    for cell in html_grid:
+        row = cell['row']
+        col = cell['col']
+        cell_type = cell['type']
+        processed_grid[row][col] = html_cell_type_to_grid_cell_type[cell_type]
+
+    return processed_grid
+
+
+def convert_html_algorithm_type_to_algorithm_method(html_algorithm_type: str) -> ShortestPathMethod:
+    if html_algorithm_type == 'dijkstra':
+        return ShortestPathMethod.DIJKSTRA
+    elif html_algorithm_type == 'a_star':
+        return ShortestPathMethod.A_STAR
 
 
 if __name__ == '__main__':
