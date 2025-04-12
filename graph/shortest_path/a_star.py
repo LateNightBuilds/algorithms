@@ -1,5 +1,5 @@
 import heapq
-from typing import List
+from typing import List, Tuple
 
 import numpy as np
 
@@ -16,7 +16,7 @@ class AStar:
         self.start_point = find_char_location(maze=self.maze, wanted_char=GridCellType.START)
         self.goal_point = find_char_location(maze=self.maze, wanted_char=GridCellType.END)
 
-    def run(self, heuristic_func=None):
+    def run(self, heuristic_func=None) -> Tuple[int, HistoryLogger]:
         min_distances = np.full((self.height, self.width), np.inf)
 
         y_s, x_s = self.start_point
