@@ -2,39 +2,47 @@ import heapq
 
 import networkx as nx
 
-from algorithms.graph.utils import graph_to_edge_list
+from algorithms.graph.utils import graph_to_edge_list, HistoryLogger
 
 
 class PrimAlgorithm:
     def __init__(self, graph: nx.Graph):
         self.graph = graph
         self.nodes = list(graph.nodes())
+        self.history = HistoryLogger()
 
-    def __post_init__(self):
+    def run(self):
         if not nx.is_connected(self.graph):
             raise ValueError("Cannot compute MST: the input graph is not connected.")
 
-    def run(self):
-        connected_nodes = set()
+        start_node = self.nodes[0]
 
-        edges = graph_to_edge_list(graph=self.graph)
-        heapq.heapify(edges)
+        mst_nodes = {start_node}
 
         mst_edges = []
 
-        while len(connected_nodes) < len(self.nodes) and edges:
-            weight, from_node, to_node = heapq.heappop(edges)
+        available_edges = []
 
-            is_nodes_already_connected = (from_node in connected_nodes and
-                                          to_node in connected_nodes)
+        for neighbor in self.graph.neighbors(start_node):
+            weight = self.graph[start_node][neighbor]['weight']
+            heapq.heappush(available_edges, (weight, start_node, neighbor))
 
-            if is_nodes_already_connected:
+        while available_edges and len(mst_nodes) < len(self.nodes):
+            weight, from_node, to_node = heapq.heappop(available_edges)
+            self.history.add_new_step(node=to_node)
+
+            if to_node in mst_nodes:
                 continue
 
             mst_edges.append((from_node, to_node, weight))
-            connected_nodes.update([from_node, to_node])
+            mst_nodes.add(to_node)
 
-        if len(connected_nodes) < len(self.nodes):
+            for neighbor in self.graph.neighbors(to_node):
+                if neighbor not in mst_nodes:
+                    neighbor_weight = self.graph[to_node][neighbor]['weight']
+                    heapq.heappush(available_edges, (neighbor_weight, to_node, neighbor))
+
+        if len(mst_nodes) < len(self.nodes):
             raise ValueError("Could not construct complete MST")
 
-        return mst_edges
+        return mst_edges, self.history
