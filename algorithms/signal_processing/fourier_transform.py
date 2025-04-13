@@ -1,5 +1,5 @@
 from enum import StrEnum
-from typing import Tuple
+from typing import Tuple, List
 
 import numpy as np
 from scipy.fft import fft, fftfreq
