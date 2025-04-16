@@ -2,7 +2,6 @@ import os
 from enum import StrEnum
 
 import numpy as np
-import scipy.io.wavfile as wavfile
 from scipy import signal
 
 FILTER_ORDER = 6
@@ -18,18 +17,12 @@ class FilterType(StrEnum):
 
 class SoundFrequencyFilter:
 
-    def run_load_sample(self, sample_name: str):
-        sample_path = os.path.join(SAMPLES_DIR, f"{sample_name}.wav")
-        self.sample_rate, self.waveform = wavfile.read(sample_path)
-        self.waveform = self._prepare_waveform_for_processing()
-
-        return self.waveform
-
-    def run_apply_filter(self, sample_name: str, filter_type: FilterType,
+    def run_apply_filter(self, waveform: np.ndarray, sample_rate: int,
+                         sample_name: str, filter_type: FilterType,
                          cutoff_frequency: float, center_frequency: float,
                          bandwidth: float):
-        sample_path = os.path.join(SAMPLES_DIR, f"{sample_name}.wav")
-        self.sample_rate, self.waveform = wavfile.read(sample_path)
+        self.waveform = waveform
+        self.sample_rate = sample_rate
         self.waveform = self._prepare_waveform_for_processing()
 
         if filter_type == FilterType.LOW_PASS:
@@ -43,19 +36,13 @@ class SoundFrequencyFilter:
         else:
             return None
 
-        filtered_path = os.path.join(SAMPLES_DIR, f"{sample_name}_filtered.wav")
-
         max_val = np.max(np.abs(filtered_waveform))
         if max_val > 0:
             filtered_waveform = filtered_waveform / max_val * 0.9
 
         filtered_waveform_int = np.int16(filtered_waveform * 32767)
-        wavfile.write(filtered_path, self.sample_rate, filtered_waveform_int)
 
         original_int = np.int16(self.waveform * 32767)
-        original_path = os.path.join(SAMPLES_DIR, f"{sample_name}_original.wav")
-        wavfile.write(original_path, self.sample_rate, original_int)
-
         return filtered_waveform
 
     def _prepare_waveform_for_processing(self):
