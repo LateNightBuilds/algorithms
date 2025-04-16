@@ -1,0 +1,93 @@
+from itertools import pairwise
+
+import numpy as np
+import random
+from typing import List, Tuple
+from dataclasses import dataclass
+
+
+@dataclass
+class Point:
+    x: float
+    y: float
+
+    def euclidean_distance(self, other_point: 'Point') -> float:
+        return np.sqrt((self.x - other_point.x) ** 2 + (self.y - other_point.y) ** 2)
+
+
+@dataclass
+class Route:
+    points: List[Point]
+
+    def get_total_distance(self):
+        return sum(curr_point.euclidean_distance(other_point=next_point)
+                   for curr_point, next_point in pairwise(self.points))
+
+    def to_edges_list(self) -> List[Tuple[Point, Point]]:
+        return [(curr_point, next_point)
+                for curr_point, next_point in pairwise(self.points)]
+
+
+class SimulatedAnealingTSP:
+    def __init__(self, points: List[Point],
+                 initial_temp: float = 1000, cooling_rate: float = 0.995,
+                 stop_temp: float = 1e-3, max_iter: int = 100000):
+
+        self.current_route = Route(points=points)
+        self.initial_temp = initial_temp
+        self.cooling_rate = cooling_rate
+        self.stop_temp = stop_temp
+        self.max_iter = max_iter
+
+    def run_simulated_annealing_travel_salesman_problem(self) -> List[Tuple[Point, Point]]:
+        current_route = self.current_route
+        best_route = self.current_route
+        best_distance = best_route.get_total_distance()
+        temp = self.initial_temp
+
+        for _ in range(self.max_iter):
+            if temp < self.stop_temp:
+                break
+
+            new_route: Route = self._suggest_new_route(current_route=current_route)
+            if self._should_explore_new_route(current_route=current_route, new_route=new_route, temp=temp):
+                current_route = new_route
+                new_route_distance = new_route.get_total_distance()
+                best_distance = min(best_distance, new_route_distance)
+
+            temp *= self.cooling_rate
+
+        return best_route.to_edges_list()
+
+    @staticmethod
+    def _should_explore_new_route(new_route: Route, current_route: Route, temp: float) -> bool:
+        current_distance = current_route.get_total_distance()
+        new_distance = new_route.get_total_distance()
+
+        if new_distance < current_distance:
+            return True
+
+        acceptance_prob = np.exp((current_distance - new_distance) / temp)
+        if acceptance_prob > random.random():
+            return True
+
+        return False
+
+    @staticmethod
+    def _suggest_new_route(current_route: Route) -> Route:
+        i, j = random.sample(range(len(current_route.points)), 2)
+        new_route = current_route
+        new_route.points[i], new_route.points[j] = new_route.points[j], new_route.points[i]
+
+        return new_route
+
+
+if __name__ == "__main__":
+    np.random.seed(42)
+    random_points = [Point(*p) for p in np.random.rand(10, 2) * 100]
+
+    simulated_anealing = SimulatedAnealingTSP(points=random_points)
+    edge_list = simulated_anealing.run_simulated_annealing_travel_salesman_problem()
+
+    for edge in edge_list:
+        print(edge)
