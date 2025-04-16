@@ -32,9 +32,6 @@ class SoundFrequencyFilter:
         self.sample_rate, self.waveform = wavfile.read(sample_path)
         self.waveform = self._prepare_waveform_for_processing()
 
-        nyquist = self.sample_rate / 2
-        filtered_waveform = None
-
         if filter_type == FilterType.LOW_PASS:
             filtered_waveform = self._apply_lowpass(cutoff_frequency=cutoff_frequency)
         elif filter_type == FilterType.HIGH_PASS:
@@ -103,8 +100,6 @@ class SoundFrequencyFilter:
         b, a = signal.butter(FILTER_ORDER, [normalized_low_cutoff, normalized_high_cutoff], btype='bandstop')
         filtered_waveform = signal.filtfilt(b, a, self.waveform)
         return filtered_waveform
-
-
 
 
 if __name__ == '__main__':
