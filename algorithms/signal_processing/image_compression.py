@@ -15,7 +15,7 @@ class ImageCompressorMethod(StrEnum):
 class ImageCompressor:
     def __init__(self, image: Image):
         self.image = image
-        self.rows, self.cols = image.shape
+        self.rows, self.cols = image.height, image.width
 
     def run_fft_compression(self, compression_factor: float) -> np.ndarray:
         assert 0 < compression_factor < 1, "compression factor should be greater than 0 or lower than 1"
