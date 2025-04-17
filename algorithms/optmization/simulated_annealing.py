@@ -1,9 +1,9 @@
+import random
+from dataclasses import dataclass
 from itertools import pairwise
+from typing import List, Tuple
 
 import numpy as np
-import random
-from typing import List, Tuple
-from dataclasses import dataclass
 
 
 @dataclass
@@ -28,10 +28,10 @@ class Route:
                 for curr_point, next_point in pairwise(self.points)]
 
 
-class SimulatedAnealingTSP:
+class SimulatedAnnealingTSP:
     def __init__(self, points: List[Point],
-                 initial_temp: float = 1000, cooling_rate: float = 0.995,
-                 stop_temp: float = 1e-3, max_iter: int = 100000):
+                 initial_temp: float = 1000, cooling_rate: float = 0.99,
+                 stop_temp: float = 1e-4, max_iter: int = 100000):
 
         self.current_route = Route(points=points)
         self.initial_temp = initial_temp
@@ -84,10 +84,10 @@ class SimulatedAnealingTSP:
 
 if __name__ == "__main__":
     np.random.seed(42)
-    random_points = [Point(*p) for p in np.random.rand(10, 2) * 100]
+    random_points = [Point(x=p[0], y=p[1]) for p in np.random.rand(10, 2) * 100]
 
-    simulated_anealing = SimulatedAnealingTSP(points=random_points)
-    edge_list = simulated_anealing.run_simulated_annealing_travel_salesman_problem()
+    simulated_annealing = SimulatedAnnealingTSP(points=random_points)
+    edge_list = simulated_annealing.run_simulated_annealing_travel_salesman_problem()
 
     for edge in edge_list:
         print(edge)
