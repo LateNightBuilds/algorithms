@@ -1,47 +1,43 @@
-from collections import defaultdict
-from dataclasses import dataclass
-from typing import Dict, Tuple, List
-
-import matplotlib.pyplot as plt
 import numpy as np
 import sklearn
-from sklearn.datasets import make_classification, make_moons
-from sklearn.inspection import DecisionBoundaryDisplay
+from sklearn.metrics import accuracy_score, f1_score, recall_score, precision_score
 from sklearn.preprocessing import StandardScaler
 
 
-@dataclass
-class Point:
-    x: float
-    y: float
+class MLPClassifierForRegularizationImpact():
+    def __init__(self, X, y, regularization):
+        self.scaler = StandardScaler()
+        self.X = self.scaler.fit_transform(X)
+        self.y = y
+        self.regularization = regularization
+        self.model = sklearn.neural_network.MLPClassifier(hidden_layer_sizes=(64, 64),
+                                                          alpha=self.regularization,
+                                                          max_iter=2000,
+                                                          random_state=42)
 
+    def fit(self):
+        self.model.fit(X=self.X, y=self.y)
 
-def run_multilayer_perceptron(X: List[Point], y: int, alpha: float):
-    multilayer_perceptron = sklearn.neural_network.MLPClassifier(hidden_layer_sizes=(64, 64),
-                                                                 alpha=alpha, random_state=42)
-    multilayer_perceptron.fit(X=X, y=y)
+    def predict(self):
+        return self.model.predict(self.X)
 
-    scaler = StandardScaler()
-    X_scaled = scaler.fit_transform(X)
+    def get_decision_boundary(self):
+        x_min, x_max = self.X[:, 0].min() - 0.5, self.X[:, 0].max() + 0.5
+        y_min, y_max = self.X[:, 1].min() - 0.5, self.X[:, 1].max() + 0.5
+        xx, yy = np.meshgrid(np.linspace(x_min, x_max, 300), np.linspace(y_min, y_max, 300))
+        Z = self.model.predict(np.c_[xx.ravel(), yy.ravel()])
+        Z = Z.reshape(xx.shape)
 
-    x_min, x_max = X_scaled[:, 0].min() - 0.5, X_scaled[:, 0].max() + 0.5
-    y_min, y_max = X_scaled[:, 1].min() - 0.5, X_scaled[:, 1].max() + 0.5
-    xx, yy = np.meshgrid(np.linspace(x_min, x_max, 300), np.linspace(y_min, y_max, 300))
-    Z = multilayer_perceptron.predict(np.c_[xx.ravel(), yy.ravel()])
-    Z = Z.reshape(xx.shape)
+        return Z
 
-    return Z
+    def get_model_accuracy_score(self, predictions):
+        return accuracy_score(self.y, predictions)
 
+    def get_model_precision_score(self, predictions):
+        return precision_score(self.y, predictions, zero_division=0)
 
-def main():
-    X, y = make_moons(n_samples=500, noise=0.3, random_state=42)
+    def get_model_recall_score(self, predictions):
+        return recall_score(self.y, predictions, zero_division=0)
 
-    alphas = [0, 0.01, 0.1, 1, 10]
-    for alpha in alphas:
-        run_multilayer_perceptron(X=X, y=y, alpha=alpha)
-
-    plt.show()
-
-
-if __name__ == '__main__':
-    main()
+    def get_model_f1_score(self, predictions):
+        return f1_score(self.y, predictions, zero_division=0)
