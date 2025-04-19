@@ -10,7 +10,7 @@ class MLPClassifierForRegularizationImpact():
         self.X = self.scaler.fit_transform(X)
         self.y = y
         self.regularization = regularization
-        self.model = sklearn.neural_network.MLPClassifier(hidden_layer_sizes=(64, 64),
+        self.model = sklearn.neural_network.MLPClassifier(hidden_layer_sizes=(16, 16),
                                                           alpha=self.regularization,
                                                           max_iter=2000,
                                                           random_state=42)
