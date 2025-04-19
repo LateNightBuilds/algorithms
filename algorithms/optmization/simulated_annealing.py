@@ -53,7 +53,9 @@ class SimulatedAnnealingTSP:
             if self._should_explore_new_route(current_route=current_route, new_route=new_route, temp=temp):
                 current_route = new_route
                 new_route_distance = new_route.get_total_distance()
-                best_distance = min(best_distance, new_route_distance)
+                if new_route_distance < best_distance:
+                    best_distance = new_route_distance
+                    best_route = new_route
 
             temp *= self.cooling_rate
 
@@ -75,11 +77,10 @@ class SimulatedAnnealingTSP:
 
     @staticmethod
     def _suggest_new_route(current_route: Route) -> Route:
-        i, j = random.sample(range(len(current_route.points)), 2)
-        new_route = current_route
-        new_route.points[i], new_route.points[j] = new_route.points[j], new_route.points[i]
-
-        return new_route
+        new_points = current_route.points.copy()
+        i, j = random.sample(range(len(new_points)), 2)
+        new_points[i], new_points[j] = new_points[j], new_points[i]
+        return Route(points=new_points)
 
 
 if __name__ == "__main__":
