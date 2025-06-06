@@ -15,34 +15,64 @@ class ImageCompressorMethod(StrEnum):
 class ImageCompressor:
     def __init__(self, image: Image):
         self.image = image
-        self.rows, self.cols = image.height, image.width
+        # PIL Image uses (width, height), but numpy uses (height, width)
+        if isinstance(image, Image.Image):
+            self.cols, self.rows = image.size  # Note: PIL uses (width, height)
+        else:
+            self.rows, self.cols = image.shape[:2]
 
     def run_fft_compression(self, compression_factor: float) -> np.ndarray:
         assert 0 < compression_factor < 1, "compression factor should be greater than 0 or lower than 1"
 
-        f_transform = np.fft.fft2(self.image)
+        # Convert to grayscale numpy array if needed
+        if isinstance(self.image, Image.Image):
+            img_array = np.array(self.image.convert('L')).astype(np.float64)
+        else:
+            img_array = self.image.astype(np.float64)
+
+        # Get actual dimensions from the array
+        rows, cols = img_array.shape
+
+        f_transform = np.fft.fft2(img_array)
         f_transform_shifted = np.fft.fftshift(f_transform)
 
-        row_center, column_center = self.rows // 2, self.cols // 2
+        row_center, col_center = rows // 2, cols // 2
 
-        row_discard = int(self.rows * compression_factor / 2)
-        col_discard = int(self.cols * compression_factor / 2)
-        from_row, to_row = row_center - row_discard, row_center + row_discard
-        from_col, to_col = column_center - col_discard, column_center + col_discard
+        # Keep center frequencies (low frequencies) based on compression_factor
+        row_keep = int(rows * compression_factor / 2)
+        col_keep = int(cols * compression_factor / 2)
 
-        f_transform_shifted[from_row:to_row, from_col:to_col] = 0
+        # Create a mask to zero out high frequencies (outer regions)
+        mask = np.zeros_like(f_transform_shifted, dtype=np.float64)
+        mask[row_center - row_keep:row_center + row_keep,
+        col_center - col_keep:col_center + col_keep] = 1
+
+        # Apply mask to keep only low frequencies
+        f_transform_shifted = f_transform_shifted * mask
+
         f_transform_inverse = np.fft.ifftshift(f_transform_shifted)
-
         img_back = np.fft.ifft2(f_transform_inverse)
-        return np.abs(img_back)
+
+        # Take the real part and ensure it's in the correct range
+        img_back = np.real(img_back)
+        img_back = np.clip(img_back, 0, 255)
+
+        return img_back
 
     def run_wavelet_compression(self, compression_factor: float) -> np.ndarray:
         assert 0 < compression_factor < 1, "compression factor should be greater than 0 or lower than 1"
 
-        coeffs = pywt.dwt2(self.image, 'db1')
+        # Convert to grayscale numpy array if needed
+        if isinstance(self.image, Image.Image):
+            img_array = np.array(self.image.convert('L')).astype(np.float64)
+        else:
+            img_array = self.image.astype(np.float64)
+
+        coeffs = pywt.dwt2(img_array, 'db1')
         approx, details = coeffs
         horizontal, vertical, diagonal = details
 
+        # Keep more coefficients for higher compression_factor
         compressed_horizontal = self._apply_compression(coeffs=horizontal,
                                                         compression_factor=compression_factor)
         compressed_vertical = self._apply_compression(coeffs=vertical,
@@ -53,43 +83,16 @@ class ImageCompressor:
         compressed_details = (compressed_horizontal, compressed_vertical, compressed_diagonal)
         compressed_coeffs = (approx, compressed_details)
         img_back = pywt.idwt2(compressed_coeffs, 'db1')
-        return np.abs(img_back)
+
+        # Ensure proper dimensions and range
+        img_back = img_back[:img_array.shape[0], :img_array.shape[1]]
+        img_back = np.clip(img_back, 0, 255)
+
+        return img_back
 
     @staticmethod
     def _apply_compression(coeffs: np.ndarray, compression_factor: float) -> np.ndarray:
+        # Keep compression_factor proportion of coefficients
         threshold = np.percentile(np.abs(coeffs), 100 * (1 - compression_factor))
         coeffs_compressed = np.where(np.abs(coeffs) < threshold, 0, coeffs)
         return coeffs_compressed
-
-
-def main():
-    current_path = Path(os.getcwd())
-    image_path = current_path / 'lena.jpg'
-    image = np.array(Image.open(image_path).convert("L"))
-
-    compressor = ImageCompressor(image)
-
-    print("Choose compression method:",
-          "1. FFT Compression",
-          "2. Wavelet Compression")
-
-    method = input("Enter your choice (1/2): ")
-
-    compression_factor = float(input("Enter compression factor (0 < factor < 1): "))
-
-    if method == '1':
-        compression_method = ImageCompressorMethod.FFT
-        compressed_image = compressor.run_fft_compression(compression_factor)
-    elif method == '2':
-        compression_method = ImageCompressorMethod.WAVELET
-        compressed_image = compressor.run_wavelet_compression(compression_factor)
-    else:
-        return
-
-    output_path = current_path / f'lena_compressed_{compression_method.name}.jpg'
-    Image.fromarray(compressed_image.astype(np.uint8)).save(output_path)
-    print(f"Compressed image saved to {output_path}")
-
-
-if __name__ == '__main__':
-    main()
