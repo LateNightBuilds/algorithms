@@ -69,10 +69,10 @@ class ImageCompressor:
             img_array = self.image.astype(np.float64)
 
         coeffs = pywt.dwt2(img_array, 'db1')
+
         approx, details = coeffs
         horizontal, vertical, diagonal = details
 
-        # Keep more coefficients for higher compression_factor
         compressed_horizontal = self._apply_compression(coeffs=horizontal,
                                                         compression_factor=compression_factor)
         compressed_vertical = self._apply_compression(coeffs=vertical,
@@ -84,7 +84,6 @@ class ImageCompressor:
         compressed_coeffs = (approx, compressed_details)
         img_back = pywt.idwt2(compressed_coeffs, 'db1')
 
-        # Ensure proper dimensions and range
         img_back = img_back[:img_array.shape[0], :img_array.shape[1]]
         img_back = np.clip(img_back, 0, 255)
 
@@ -94,5 +93,5 @@ class ImageCompressor:
     def _apply_compression(coeffs: np.ndarray, compression_factor: float) -> np.ndarray:
         # Keep compression_factor proportion of coefficients
         threshold = np.percentile(np.abs(coeffs), 100 * (1 - compression_factor))
-        coeffs_compressed = np.where(np.abs(coeffs) < threshold, 0, coeffs)
-        return coeffs_compressed
+        coeffs[np.abs(coeffs) < threshold] = 0
+        return coeffs

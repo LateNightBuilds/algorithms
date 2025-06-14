@@ -20,7 +20,7 @@ class OneDimensionalGradientDescent:
 
     @staticmethod
     def _finite_difference(f_x: Callable, x: float, delta: float = 1e-5):
-        return (f_x(x + h) - f_x(x)) / delta
+        return (f_x(x + delta) - f_x(x)) / delta
 
 
 class OneDimensionalAdaptiveMovementEstimation:
@@ -52,18 +52,10 @@ class OneDimensionalAdaptiveMovementEstimation:
 
     @staticmethod
     def _finite_difference(f_x: Callable, x: float, delta: float = 1e-5):
-        return (f_x(x + h) - f_x(x)) / delta
+        return (f_x(x + delta) - f_x(x)) / delta
 
-    def _first_moment_estimation(self, prev_first_moment: float, gradient: float):
-        return self.first_moment_beta * prev_first_moment + (1 - self.first_moment_beta) * gradient
+    def _first_moment_estimation(self, prev_first_movement: float, gradient: float):
+        return self.first_moment_beta * prev_first_movement + (1 - self.first_moment_beta) * gradient
 
-    def _second_moment_estimation(self, prev_second_moment: float, gradient: float):
-        return self.second_moment_beta * prev_second_moment + (1 - self.second_moment_beta) * np.square(gradient)
-
-
-def main():
-    pass
-
-
-if __name__ == '__main__':
-    main()
+    def _second_moment_estimation(self, prev_second_movement: float, gradient: float):
+        return self.second_moment_beta * prev_second_movement + (1 - self.second_moment_beta) * np.square(gradient)
